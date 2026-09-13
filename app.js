@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = 'https://pg-backend-8fi9.onrender.com/api';
 
 // Function to fetch and display rooms
 async function loadRooms() {
