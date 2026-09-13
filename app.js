@@ -343,6 +343,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('t-room')) populateRoomDropdown();
     // NEW: Load the history table if it exists on the page
     if (document.getElementById('history-table-body')) loadHistory();
+    // NEW: Load the active tenants into the payment form dropdown
+    if (document.getElementById('p-tenant')) populateTenantDropdown();
 });
 
 
@@ -495,4 +497,30 @@ function loadNavbar() {
 function logout() {
     sessionStorage.removeItem('pg_role');
     window.location.href = 'index.html';
+}
+
+
+
+
+// --- Populate Tenant Dropdown in Payment Form ---
+async function populateTenantDropdown() {
+    const tenantSelect = document.getElementById('p-tenant');
+    // Only run this if we are on the payments page and the element is a dropdown
+    if (!tenantSelect || tenantSelect.tagName !== 'SELECT') return;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/tenants/active`);
+        const tenants = await response.json();
+        
+        tenantSelect.innerHTML = '<option value="" disabled selected>Select a Tenant...</option>';
+        
+        tenants.forEach(tenant => {
+            // Displays: Rahul Sharma - Room 101 (9876543210)
+            const optionText = `${tenant.fullName} - Room ${tenant.roomId} (${tenant.phoneNumber})`;
+            tenantSelect.innerHTML += `<option value="${tenant.id}">${optionText}</option>`;
+        });
+    } catch (error) {
+        console.error('Error fetching tenants for dropdown:', error);
+        tenantSelect.innerHTML = '<option value="" disabled>Error loading tenants</option>';
+    }
 }
