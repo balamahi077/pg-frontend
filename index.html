@@ -3,35 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PG Management Dashboard</title>
-    <!-- Tailwind CSS CDN -->
+    <title>Login - PG Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans">
+<body class="bg-gray-200 flex items-center justify-center h-screen font-sans">
 
-    <!-- Navigation Bar -->
-    <nav class="bg-blue-600 text-white p-4 shadow-md">
-        <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold">PG Manager</h1>
-            <ul class="flex space-x-4">
-                <li><a href="index.html" class="hover:text-blue-200">Dashboard</a></li>
-                <li><a href="tenants.html" class="hover:text-blue-200">Tenants</a></li>
-                <li><a href="payments.html" class="hover:text-blue-200">Payments</a></li>
-            </ul>
+    <div class="bg-white p-8 rounded-lg shadow-lg w-96 max-w-full">
+        <div class="text-center mb-6">
+            <h1 class="text-2xl font-bold text-blue-700">PG Manager</h1>
+            <p class="text-gray-500 text-sm">Enter PIN to access your dashboard</p>
         </div>
-    </nav>
 
-    <!-- Main Content Area -->
-    <main class="container mx-auto mt-8 p-4">
-        <h2 class="text-2xl font-semibold mb-6">Room Overview</h2>
-        
-        <!-- This is where our JavaScript will inject the room cards -->
-        <div id="room-list" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <p class="text-gray-500">Loading rooms from backend...</p>
-        </div>
-    </main>
+        <form id="login-form" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Access PIN</label>
+                <input type="password" id="pin-input" required class="mt-1 w-full p-3 border border-gray-300 rounded-md text-center text-xl tracking-widest" placeholder="••••">
+            </div>
+            <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700 font-bold">Login</button>
+        </form>
+        <p id="login-error" class="text-red-500 text-sm text-center mt-3 hidden">Incorrect PIN.</p>
+    </div>
 
-    <!-- Link to our JavaScript file -->
     <script src="app.js"></script>
 </body>
 </html>

@@ -1,5 +1,50 @@
 const API_BASE_URL = 'https://pg-backend-8fi9.onrender.com/api';
 
+// --- Authentication Logic ---
+const CARETAKER_PIN = "1234"; // Change this to your preferred PIN
+const OWNER_PIN = "9999";     // Change this to the Owner's preferred PIN
+
+function checkAuth() {
+    // If we are already on the login page, do nothing
+    if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
+        return; 
+    }
+    
+    // Check if a session exists
+    const userRole = sessionStorage.getItem('pg_role');
+    
+    if (!userRole) {
+        // Kick them back to login if they try to bypass it
+        window.location.href = 'index.html'; // FIXED: Now routes to index.html
+    }
+
+    // Restrict Caretakers from accessing the Owner Dashboard
+    if (window.location.pathname.includes('owner.html') && userRole !== 'OWNER') {
+        alert('Access Denied. Owner PIN required to manage building structure.');
+        window.location.href = 'index.html';
+    }
+}
+
+// Handle Login Submission
+const loginForm = document.getElementById('login-form');
+if (loginForm) {
+    loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const enteredPin = document.getElementById('pin-input').value;
+        const errorMsg = document.getElementById('login-error');
+
+        if (enteredPin === CARETAKER_PIN) {
+            sessionStorage.setItem('pg_role', 'CARETAKER');
+            window.location.href = 'caretaker.html'; // Send to Caretaker Dashboard
+        } else if (enteredPin === OWNER_PIN) {
+            sessionStorage.setItem('pg_role', 'OWNER');
+            window.location.href = 'owner.html'; // Send to Owner Dashboard
+        } else {
+            errorMsg.classList.remove('hidden');
+        }
+    });
+}
+
 // Function to fetch and display rooms
 async function loadRooms() {
     const roomListContainer = document.getElementById('room-list');
@@ -34,15 +79,13 @@ async function loadRooms() {
 
     } catch (error) {
         console.error('Error fetching rooms:', error);
-        roomListContainer.innerHTML = '<p class="text-red-500">Failed to connect to the server. Is Spring Boot running?</p>';
+        if (roomListContainer) {
+            roomListContainer.innerHTML = '<p class="text-red-500">Failed to connect to the server. Is Spring Boot running?</p>';
+        }
     }
 }
 
-// Run the function when the page loads
-document.addEventListener('DOMContentLoaded', loadRooms);
-
 // --- Tenant Management Logic ---
-
 async function loadTenants() {
     const tenantTableBody = document.getElementById('tenant-table-body');
     if (!tenantTableBody) return; // Only run if on the tenants.html page
@@ -119,18 +162,7 @@ if (addTenantForm) {
     });
 }
 
-// Run loadTenants when DOM loads
-document.addEventListener('DOMContentLoaded', () => {
-    // loadRooms() might be called from previous steps; we can safely ignore errors if elements don't exist
-    if (document.getElementById('room-list')) {
-        loadRooms(); 
-    }
-    loadTenants();
-});
-
-
 // --- Payment Management Logic ---
-
 async function loadPayments() {
     const paymentTableBody = document.getElementById('payment-table-body');
     if (!paymentTableBody) return; // Only run on payments.html
@@ -206,14 +238,6 @@ if (recordPaymentForm) {
     });
 }
 
-// Update the DOMContentLoaded event listener at the very bottom of app.js to include loadPayments:
-document.addEventListener('DOMContentLoaded', () => {
-    if (document.getElementById('room-list')) loadRooms(); 
-    if (document.getElementById('tenant-table-body')) loadTenants();
-    if (document.getElementById('payment-table-body')) loadPayments();
-});
-
-
 // --- Owner Management (Rooms with Blocks/Floors) ---
 const addRoomForm = document.getElementById('add-room-form');
 if (addRoomForm) {
@@ -273,7 +297,6 @@ async function loadRoomsByBlock() {
 }
 
 // --- Caretaker Notice & Vacate Logic ---
-// Add these functions so the HTML buttons can call them
 async function putOnNotice(tenantId) {
     const noticeDate = prompt("Enter notice date (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
     if (!noticeDate) return;
@@ -304,7 +327,14 @@ async function vacateTenant(tenantId) {
     }
 }
 
-// Make sure to call loadRoomsByBlock on page load if we are on owner.html
+// --- Unified Page Load Logic (CLEANED) ---
 document.addEventListener('DOMContentLoaded', () => {
+    // Auth guard check
+    checkAuth();
+
+    // Load data based on which page we are currently on
+    if (document.getElementById('room-list')) loadRooms(); 
+    if (document.getElementById('tenant-table-body')) loadTenants();
+    if (document.getElementById('payment-table-body')) loadPayments();
     if (document.getElementById('structured-room-list')) loadRoomsByBlock();
 });
