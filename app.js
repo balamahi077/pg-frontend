@@ -86,32 +86,57 @@ async function loadRooms() {
 }
 
 // --- Tenant Management Logic ---
+// --- Tenant Management Logic (Fixed Room Names & Notice Status) ---
 async function loadTenants() {
     const tenantTableBody = document.getElementById('tenant-table-body');
-    if (!tenantTableBody) return; // Only run if on the tenants.html page
+    if (!tenantTableBody) return;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/tenants/active`); 
-        const tenants = await response.json();
+        // Fetch ALL tenants and ALL rooms at the same time
+        const [tenantsResponse, roomsResponse] = await Promise.all([
+            fetch(`${API_BASE_URL}/tenants`), 
+            fetch(`${API_BASE_URL}/rooms`)
+        ]);
+        
+        const allTenants = await tenantsResponse.json();
+        const rooms = await roomsResponse.json();
+
+        // Create a lookup dictionary: ID -> "Block A - 102"
+        const roomMap = {};
+        rooms.forEach(room => {
+            roomMap[room.id] = `Block ${room.blockName} - ${room.roomNumber}`;
+        });
+
+        // Filter to show ONLY Active and On Notice tenants on this dashboard
+        const currentTenants = allTenants.filter(t => t.status === 'ACTIVE' || t.status === 'ON_NOTICE');
         
         tenantTableBody.innerHTML = '';
         
-        if (tenants.length === 0) {
+        if (currentTenants.length === 0) {
             tenantTableBody.innerHTML = '<tr><td colspan="4" class="p-3 text-center text-gray-500">No active tenants.</td></tr>';
             return;
         }
 
-        tenants.forEach(tenant => {
-            const statusBadge = tenant.status === 'ON_NOTICE' 
+        currentTenants.forEach(tenant => {
+            const isNotice = tenant.status === 'ON_NOTICE';
+            const statusBadge = isNotice 
                 ? '<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">On Notice</span>' 
                 : '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">Active</span>';
+
+            // Get the real room name using our dictionary
+            const realRoomName = roomMap[tenant.roomId] || `Room ID ${tenant.roomId}`;
+
+            // Hide the "Notice" button if they are already on notice
+            const noticeBtn = !isNotice 
+                ? `<button onclick="putOnNotice(${tenant.id})" class="text-yellow-600 hover:underline text-sm mr-2">Notice</button>` 
+                : '';
 
             const row = `
                 <tr class="hover:bg-gray-50 border-b">
                     <td class="p-3">${tenant.fullName} ${statusBadge}</td>
-                    <td class="p-3">Room ${tenant.roomId}</td>
+                    <td class="p-3 font-semibold text-gray-700">${realRoomName}</td>
                     <td class="p-3 text-right">
-                        <button onclick="putOnNotice(${tenant.id})" class="text-yellow-600 hover:underline text-sm mr-2">Notice</button>
+                        ${noticeBtn}
                         <button onclick="vacateTenant(${tenant.id})" class="text-red-600 hover:underline text-sm">Vacate</button>
                     </td>
                 </tr>
@@ -374,37 +399,38 @@ if (tenantSearchInput) {
     });
 }
 
-// --- Populate Room Dropdown in Tenant Form ---
-// --- Populate Room Dropdown in Tenant Form (Occupancy Aware) ---
+// --- Populate Room Dropdown (Fixed Double Booking) ---
 async function populateRoomDropdown() {
     const roomSelect = document.getElementById('t-room');
     if (!roomSelect) return;
 
     try {
-        // Fetch both rooms and active tenants at the same time
         const [roomsResponse, tenantsResponse] = await Promise.all([
             fetch(`${API_BASE_URL}/rooms`),
-            fetch(`${API_BASE_URL}/tenants/active`)
+            fetch(`${API_BASE_URL}/tenants`) // Fetch ALL to see who is on notice
         ]);
 
         const rooms = await roomsResponse.json();
-        const activeTenants = await tenantsResponse.json();
+        const allTenants = await tenantsResponse.json();
         
         roomSelect.innerHTML = '<option value="" disabled selected>Select an Available Room...</option>';
         
         rooms.forEach(room => {
-            // Count how many active tenants are currently assigned to this specific room
-            const currentOccupants = activeTenants.filter(t => t.roomId === room.id).length;
-            const availableBeds = room.totalBeds - currentOccupants;
+            // Count tenants who are physically in the room (Active OR On Notice)
+            const physicalOccupants = allTenants.filter(t => t.roomId === room.id && (t.status === 'ACTIVE' || t.status === 'ON_NOTICE'));
+            const availableBeds = room.totalBeds - physicalOccupants.length;
 
             if (availableBeds > 0) {
-                // Room has space: Show it as selectable
                 const optionText = `Block ${room.blockName} - Room ${room.roomNumber} (${availableBeds} bed(s) available)`;
                 roomSelect.innerHTML += `<option value="${room.id}">${optionText}</option>`;
             } else {
-                // Room is full: Show it in the list so the caretaker knows it exists, but disable it
-                const optionText = `Block ${room.blockName} - Room ${room.roomNumber} (FULL)`;
-                roomSelect.innerHTML += `<option value="${room.id}" disabled class="text-red-400 bg-gray-50">${optionText}</option>`;
+                // See if the room is full, but someone is leaving soon
+                const hasNotice = physicalOccupants.some(t => t.status === 'ON_NOTICE');
+                const fullText = hasNotice 
+                    ? `Block ${room.blockName} - Room ${room.roomNumber} (Full - Vacating Soon)` 
+                    : `Block ${room.blockName} - Room ${room.roomNumber} (FULL)`;
+                
+                roomSelect.innerHTML += `<option value="${room.id}" disabled class="text-red-400 bg-gray-50">${fullText}</option>`;
             }
         });
     } catch (error) {
