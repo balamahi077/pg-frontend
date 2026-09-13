@@ -375,20 +375,37 @@ if (tenantSearchInput) {
 }
 
 // --- Populate Room Dropdown in Tenant Form ---
+// --- Populate Room Dropdown in Tenant Form (Occupancy Aware) ---
 async function populateRoomDropdown() {
     const roomSelect = document.getElementById('t-room');
     if (!roomSelect) return;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/rooms`);
-        const rooms = await response.json();
+        // Fetch both rooms and active tenants at the same time
+        const [roomsResponse, tenantsResponse] = await Promise.all([
+            fetch(`${API_BASE_URL}/rooms`),
+            fetch(`${API_BASE_URL}/tenants/active`)
+        ]);
+
+        const rooms = await roomsResponse.json();
+        const activeTenants = await tenantsResponse.json();
         
-        roomSelect.innerHTML = '<option value="" disabled selected>Select a Room</option>';
+        roomSelect.innerHTML = '<option value="" disabled selected>Select an Available Room...</option>';
         
         rooms.forEach(room => {
-            // Displays: Block A - Room 101 (Beds: 2)
-            const optionText = `Block ${room.blockName} - Room ${room.roomNumber} (Beds: ${room.totalBeds})`;
-            roomSelect.innerHTML += `<option value="${room.id}">${optionText}</option>`;
+            // Count how many active tenants are currently assigned to this specific room
+            const currentOccupants = activeTenants.filter(t => t.roomId === room.id).length;
+            const availableBeds = room.totalBeds - currentOccupants;
+
+            if (availableBeds > 0) {
+                // Room has space: Show it as selectable
+                const optionText = `Block ${room.blockName} - Room ${room.roomNumber} (${availableBeds} bed(s) available)`;
+                roomSelect.innerHTML += `<option value="${room.id}">${optionText}</option>`;
+            } else {
+                // Room is full: Show it in the list so the caretaker knows it exists, but disable it
+                const optionText = `Block ${room.blockName} - Room ${room.roomNumber} (FULL)`;
+                roomSelect.innerHTML += `<option value="${room.id}" disabled class="text-red-400 bg-gray-50">${optionText}</option>`;
+            }
         });
     } catch (error) {
         console.error('Error fetching rooms for dropdown:', error);
