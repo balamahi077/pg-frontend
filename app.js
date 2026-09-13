@@ -340,6 +340,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // NEW: Load the room dropdown options if the field exists
     if (document.getElementById('t-room')) populateRoomDropdown();
+    // NEW: Load the history table if it exists on the page
+    if (document.getElementById('history-table-body')) loadHistory();
 });
 
 
@@ -388,5 +390,57 @@ async function populateRoomDropdown() {
     } catch (error) {
         console.error('Error fetching rooms for dropdown:', error);
         roomSelect.innerHTML = '<option value="" disabled>Error loading rooms</option>';
+    }
+}
+
+
+// --- Tenant History Logic ---
+async function loadHistory() {
+    const historyTableBody = document.getElementById('history-table-body');
+    if (!historyTableBody) return;
+
+    try {
+        // Fetch ALL tenants from the database
+        const response = await fetch(`${API_BASE_URL}/tenants`);
+        const allTenants = await response.json();
+        
+        // Filter out the ACTIVE tenants so we only see Notice and Vacated
+        const pastTenants = allTenants.filter(tenant => tenant.status !== 'ACTIVE');
+        
+        historyTableBody.innerHTML = '';
+        
+        if (pastTenants.length === 0) {
+            historyTableBody.innerHTML = '<tr><td colspan="5" class="p-3 text-center text-gray-500">No past or notice tenants found.</td></tr>';
+            return;
+        }
+
+        // Sort so the newest changes appear at the top
+        pastTenants.reverse().forEach(tenant => {
+            const isNotice = tenant.status === 'ON_NOTICE';
+            
+            const statusBadge = isNotice
+                ? '<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded font-bold">ON NOTICE</span>' 
+                : '<span class="bg-gray-200 text-gray-800 text-xs px-2 py-1 rounded font-bold">VACATED</span>';
+
+            // Display the relevant date based on their status
+            const dateInfo = isNotice 
+                ? `<span class="text-yellow-600">Notice Given: ${tenant.noticeDate}</span>` 
+                : `<span class="text-red-500">Left on: ${tenant.vacateDate}</span>`;
+
+            const row = `
+                <tr class="hover:bg-gray-50 border-b">
+                    <td class="p-3 font-medium">${tenant.fullName}</td>
+                    <td class="p-3 text-gray-600">${tenant.phoneNumber}</td>
+                    <td class="p-3 font-semibold text-blue-600">Room ${tenant.roomId}</td>
+                    <td class="p-3">${statusBadge}</td>
+                    <td class="p-3 text-sm font-medium">${dateInfo}</td>
+                </tr>
+            `;
+            historyTableBody.innerHTML += row;
+        });
+
+    } catch (error) {
+        console.error('Error fetching history:', error);
+        historyTableBody.innerHTML = '<tr><td colspan="5" class="p-3 text-red-500">Failed to load history.</td></tr>';
     }
 }

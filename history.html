@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tenant History - PG Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+    
+    <!-- Updated Navigation Bar -->
+    <nav class="bg-blue-600 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold">PG Manager</h1>
+            <ul class="flex space-x-4">
+                <li><a href="caretaker.html" class="hover:text-blue-200">Dashboard</a></li>
+                <li><a href="tenants.html" class="hover:text-blue-200">Tenants</a></li>
+                <li><a href="payments.html" class="hover:text-blue-200">Payments</a></li>
+                <li><a href="history.html" class="font-bold underline">History</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container mx-auto mt-8 p-4">
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4">Notice & Vacated Tenants</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-left text-sm">
+                    <thead class="bg-gray-200">
+                        <tr>
+                            <th class="p-3 border-b">Name</th>
+                            <th class="p-3 border-b">Phone</th>
+                            <th class="p-3 border-b">Room</th>
+                            <th class="p-3 border-b">Status</th>
+                            <th class="p-3 border-b">Important Dates</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body">
+                        <tr><td colspan="5" class="p-3 text-gray-500 text-center">Loading history...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
