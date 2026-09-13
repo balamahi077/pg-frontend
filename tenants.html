@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tenants - PG Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+    <nav class="bg-blue-600 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold">PG Manager</h1>
+            <ul class="flex space-x-4">
+                <li><a href="index.html" class="hover:text-blue-200">Dashboard</a></li>
+                <li><a href="tenants.html" class="font-bold underline">Tenants</a></li>
+                <li><a href="#" class="hover:text-blue-200">Payments</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container mx-auto mt-8 p-4 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Add Tenant Form -->
+        <div class="bg-white p-6 rounded-lg shadow-md col-span-1 h-fit">
+            <h2 class="text-xl font-semibold mb-4">Add New Tenant</h2>
+            <form id="add-tenant-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Full Name</label>
+                    <input type="text" id="t-name" required class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Phone Number</label>
+                    <input type="text" id="t-phone" required class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Aadhar Number</label>
+                    <input type="text" id="t-aadhar" required class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Joining Date</label>
+                    <input type="date" id="t-date" required class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Assign Room ID</label>
+                    <input type="number" id="t-room" required class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700">Save Tenant</button>
+            </form>
+        </div>
+
+        <!-- Tenant List -->
+        <div class="bg-white p-6 rounded-lg shadow-md col-span-2">
+            <h2 class="text-xl font-semibold mb-4">Active Tenants</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-left text-sm">
+                    <thead class="bg-gray-200">
+                        <tr>
+                            <th class="p-3 border-b">Name</th>
+                            <th class="p-3 border-b">Phone</th>
+                            <th class="p-3 border-b">Room ID</th>
+                            <th class="p-3 border-b">Joined</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tenant-table-body">
+                        <tr><td colspan="4" class="p-3 text-gray-500">Loading tenants...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

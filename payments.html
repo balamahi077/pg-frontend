@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payments - PG Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+    <nav class="bg-blue-600 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold">PG Manager</h1>
+            <ul class="flex space-x-4">
+                <li><a href="index.html" class="hover:text-blue-200">Dashboard</a></li>
+                <li><a href="tenants.html" class="hover:text-blue-200">Tenants</a></li>
+                <li><a href="payments.html" class="font-bold underline">Payments</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container mx-auto mt-8 p-4 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Log Payment Form -->
+        <div class="bg-white p-6 rounded-lg shadow-md col-span-1 h-fit border-t-4 border-green-500">
+            <h2 class="text-xl font-semibold mb-4 text-green-700">Record Manual Payment</h2>
+            <form id="record-payment-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Tenant ID</label>
+                    <input type="number" id="p-tenant" required class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Month & Year</label>
+                    <input type="text" id="p-month" placeholder="e.g., Sep 2026" required class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Amount Paid (₹)</label>
+                    <input type="number" id="p-amount" required class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Payment Mode</label>
+                    <select id="p-mode" class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                        <option value="CASH">Cash</option>
+                        <option value="UPI">UPI</option>
+                        <option value="BANK_TRANSFER">Bank Transfer</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Reference Note (Optional)</label>
+                    <input type="text" id="p-ref" placeholder="UPI UTR last 4 digits" class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                </div>
+                <button type="submit" class="w-full bg-green-600 text-white p-2 rounded-md hover:bg-green-700 font-bold">Verify & Record</button>
+            </form>
+        </div>
+
+        <!-- Payment History -->
+        <div class="bg-white p-6 rounded-lg shadow-md col-span-2">
+            <h2 class="text-xl font-semibold mb-4">Recent Collections</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-left text-sm">
+                    <thead class="bg-gray-200">
+                        <tr>
+                            <th class="p-3 border-b">Date</th>
+                            <th class="p-3 border-b">Tenant ID</th>
+                            <th class="p-3 border-b">Month</th>
+                            <th class="p-3 border-b">Amount</th>
+                            <th class="p-3 border-b">Mode</th>
+                        </tr>
+                    </thead>
+                    <tbody id="payment-table-body">
+                        <tr><td colspan="5" class="p-3 text-gray-500">Loading payments...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
