@@ -338,3 +338,30 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('payment-table-body')) loadPayments();
     if (document.getElementById('structured-room-list')) loadRoomsByBlock();
 });
+
+
+// --- Tenant Search Logic ---
+const tenantSearchInput = document.getElementById('tenant-search');
+
+if (tenantSearchInput) {
+    tenantSearchInput.addEventListener('keyup', function() {
+        const query = this.value.toLowerCase();
+        const rows = document.querySelectorAll('#tenant-table-body tr');
+
+        rows.forEach(row => {
+            // Ignore the "Loading..." or "No active tenants" empty state rows
+            if (row.cells.length < 3) return; 
+
+            // Get text from Name column and Room column
+            const nameText = row.cells[0].textContent.toLowerCase();
+            const roomText = row.cells[1].textContent.toLowerCase();
+
+            // If the query matches the name or the room, show the row. Otherwise, hide it.
+            if (nameText.includes(query) || roomText.includes(query)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+}
