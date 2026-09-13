@@ -131,16 +131,31 @@ async function loadTenants() {
                 ? `<button onclick="putOnNotice(${tenant.id})" class="text-yellow-600 hover:underline text-sm mr-2">Notice</button>` 
                 : '';
 
-            const row = `
-                <tr class="hover:bg-gray-50 border-b">
-                    <td class="p-3">${tenant.fullName} ${statusBadge}</td>
-                    <td class="p-3 font-semibold text-gray-700">${realRoomName}</td>
-                    <td class="p-3 text-right">
-                        ${noticeBtn}
-                        <button onclick="vacateTenant(${tenant.id})" class="text-red-600 hover:underline text-sm">Vacate</button>
-                    </td>
-                </tr>
-            `;
+                // Generate appropriate buttons based on status
+                let actionButtons = '';
+                if (isNotice) {
+                    // If on notice, show Cancel Notice and Vacate
+                    actionButtons = `
+                        <button onclick="cancelNotice(${tenant.id})" class="text-blue-600 hover:underline text-sm mr-3 font-semibold">Cancel Notice</button>
+                        <button onclick="vacateTenant(${tenant.id})" class="text-red-600 hover:underline text-sm font-semibold">Vacate</button>
+                    `;
+                } else {
+                    // If active, show regular Notice and Vacate
+                    actionButtons = `
+                        <button onclick="putOnNotice(${tenant.id})" class="text-yellow-600 hover:underline text-sm mr-3 font-semibold">Notice</button>
+                        <button onclick="vacateTenant(${tenant.id})" class="text-red-600 hover:underline text-sm font-semibold">Vacate</button>
+                    `;
+                }
+    
+                const row = `
+                    <tr class="hover:bg-gray-50 border-b">
+                        <td class="p-3">${tenant.fullName} ${statusBadge}</td>
+                        <td class="p-3 font-semibold text-gray-700">${realRoomName}</td>
+                        <td class="p-3 text-right">
+                            ${actionButtons}
+                        </td>
+                    </tr>
+                `;
             tenantTableBody.innerHTML += row;
         });
 
@@ -337,18 +352,17 @@ async function putOnNotice(tenantId) {
     }
 }
 
-async function vacateTenant(tenantId) {
-    const vacateDate = prompt("Enter official vacate date (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
-    if (!vacateDate) return;
+async function cancelNotice(tenantId) {
+    if (!confirm("Are you sure you want to cancel the notice? This will make the tenant fully active again.")) return;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/tenants/${tenantId}/vacate?vacateDate=${vacateDate}`, { method: 'PUT' });
+        const response = await fetch(`${API_BASE_URL}/tenants/${tenantId}/cancel-notice`, { method: 'PUT' });
         if (response.ok) {
-            alert('Tenant has officially vacated the room.');
-            loadTenants(); // Refresh table to hide them
+            alert('Notice cancelled successfully.');
+            loadTenants(); // Refresh table to show them as Active
         }
     } catch (error) {
-        console.error('Error vacating tenant:', error);
+        console.error('Error canceling notice:', error);
     }
 }
 
