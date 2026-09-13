@@ -337,6 +337,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('tenant-table-body')) loadTenants();
     if (document.getElementById('payment-table-body')) loadPayments();
     if (document.getElementById('structured-room-list')) loadRoomsByBlock();
+
+    // NEW: Load the room dropdown options if the field exists
+    if (document.getElementById('t-room')) populateRoomDropdown();
 });
 
 
@@ -364,4 +367,26 @@ if (tenantSearchInput) {
             }
         });
     });
+}
+
+// --- Populate Room Dropdown in Tenant Form ---
+async function populateRoomDropdown() {
+    const roomSelect = document.getElementById('t-room');
+    if (!roomSelect) return;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/rooms`);
+        const rooms = await response.json();
+        
+        roomSelect.innerHTML = '<option value="" disabled selected>Select a Room</option>';
+        
+        rooms.forEach(room => {
+            // Displays: Block A - Room 101 (Beds: 2)
+            const optionText = `Block ${room.blockName} - Room ${room.roomNumber} (Beds: ${room.totalBeds})`;
+            roomSelect.innerHTML += `<option value="${room.id}">${optionText}</option>`;
+        });
+    } catch (error) {
+        console.error('Error fetching rooms for dropdown:', error);
+        roomSelect.innerHTML = '<option value="" disabled>Error loading rooms</option>';
+    }
 }
