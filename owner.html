@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owner Dashboard - PG Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+    <nav class="bg-purple-700 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold">PG Manager (Owner)</h1>
+            <ul class="flex space-x-4">
+                <li><a href="owner.html" class="font-bold underline">Manage Building</a></li>
+                <li><a href="index.html" class="hover:text-purple-200">Caretaker View</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container mx-auto mt-8 p-4 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Add Structured Room Form -->
+        <div class="bg-white p-6 rounded-lg shadow-md col-span-1 h-fit border-t-4 border-purple-500">
+            <h2 class="text-xl font-semibold mb-4 text-purple-700">Add New Room</h2>
+            <form id="add-room-form" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Block</label>
+                        <select id="r-block" class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                            <option value="A">Block A</option>
+                            <option value="B">Block B</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Floor</label>
+                        <input type="number" id="r-floor" required class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Room No.</label>
+                        <input type="text" id="r-number" required class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Type</label>
+                        <select id="r-type" class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                            <option value="SINGLE">Single</option>
+                            <option value="DOUBLE">Double</option>
+                            <option value="TRIPLE">Triple</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Total Beds</label>
+                        <input type="number" id="r-beds" required class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Rent (₹)</label>
+                        <input type="number" id="r-rent" required class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-purple-600 text-white p-2 rounded-md hover:bg-purple-700 font-bold">Save Room</button>
+            </form>
+        </div>
+
+        <!-- Room List Filtered by Block -->
+        <div class="bg-white p-6 rounded-lg shadow-md col-span-2">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold">Building Overview</h2>
+                <select id="filter-block" class="p-2 border border-gray-300 rounded-md" onchange="loadRoomsByBlock()">
+                    <option value="ALL">All Blocks</option>
+                    <option value="A">Block A</option>
+                    <option value="B">Block B</option>
+                </select>
+            </div>
+            <div id="structured-room-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <p class="text-gray-500">Loading building data...</p>
+            </div>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
