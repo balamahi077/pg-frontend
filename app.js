@@ -331,6 +331,7 @@ async function vacateTenant(tenantId) {
 document.addEventListener('DOMContentLoaded', () => {
     // Auth guard check
     checkAuth();
+    loadNavbar(); // NEW: Injects the navigation bar
 
     // Load data based on which page we are currently on
     if (document.getElementById('room-list')) loadRooms(); 
@@ -443,4 +444,55 @@ async function loadHistory() {
         console.error('Error fetching history:', error);
         historyTableBody.innerHTML = '<tr><td colspan="5" class="p-3 text-red-500">Failed to load history.</td></tr>';
     }
+}
+
+// --- Dynamic Navbar & Logout ---
+function loadNavbar() {
+    const navbarPlaceholder = document.getElementById('navbar-placeholder');
+    if (!navbarPlaceholder) return; // Skip if on the login page
+
+    const currentPage = window.location.pathname.split('/').pop();
+    const role = sessionStorage.getItem('pg_role');
+
+    // Helper function to underline the active page
+    const active = (page) => currentPage === page ? "font-bold underline" : "hover:text-blue-200";
+
+    let links = '';
+    
+    if (currentPage === 'owner.html') {
+        // Owner Specific Navbar
+        links = `
+            <li><a href="owner.html" class="font-bold underline">Manage Building</a></li>
+            <li><a href="caretaker.html" class="hover:text-purple-200">Caretaker View</a></li>
+            <li><button onclick="logout()" class="text-red-300 hover:text-white ml-4">Logout</button></li>
+        `;
+    } else {
+        // Caretaker Navbar (Includes a button to go back to Owner View if the Owner is logged in)
+        links = `
+            <li><a href="caretaker.html" class="${active('caretaker.html')}">Dashboard</a></li>
+            <li><a href="tenants.html" class="${active('tenants.html')}">Tenants</a></li>
+            <li><a href="payments.html" class="${active('payments.html')}">Payments</a></li>
+            <li><a href="history.html" class="${active('history.html')}">History</a></li>
+            ${role === 'OWNER' ? '<li><a href="owner.html" class="text-purple-300 hover:text-purple-100 ml-4 font-bold border-l pl-4">Owner View</a></li>' : ''}
+            <li><button onclick="logout()" class="text-red-300 hover:text-white ml-4 border-l pl-4 border-gray-400">Logout</button></li>
+        `;
+    }
+
+    const navColor = currentPage === 'owner.html' ? 'bg-purple-700' : 'bg-blue-600';
+
+    navbarPlaceholder.innerHTML = `
+        <nav class="${navColor} text-white p-4 shadow-md">
+            <div class="container mx-auto flex justify-between items-center">
+                <h1 class="text-xl font-bold">PG Manager</h1>
+                <ul class="flex space-x-4 items-center">
+                    ${links}
+                </ul>
+            </div>
+        </nav>
+    `;
+}
+
+function logout() {
+    sessionStorage.removeItem('pg_role');
+    window.location.href = 'index.html';
 }
