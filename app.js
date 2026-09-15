@@ -175,6 +175,32 @@ function closeRoomModal() {
     document.getElementById('room-modal').classList.add('hidden');
 }
 
+// --- Caretaker Dashboard Room Search ---
+function setupRoomSearch() {
+    const roomSearchInput = document.getElementById('room-search');
+    if (!roomSearchInput) return; // Only run if the search bar exists on this page
+
+    roomSearchInput.addEventListener('keyup', function() {
+        const query = this.value.toLowerCase();
+        // Select all the generated room cards inside the room-list container
+        const roomCards = document.querySelectorAll('#room-list > div');
+
+        roomCards.forEach(card => {
+            // The room title is inside the <h3> tag
+            const roomTitle = card.querySelector('h3');
+            if (roomTitle) {
+                const text = roomTitle.textContent.toLowerCase();
+                // If the title contains what we typed, show it. Otherwise, hide it.
+                if (text.includes(query)) {
+                    card.style.display = ''; 
+                } else {
+                    card.style.display = 'none'; 
+                }
+            }
+        });
+    });
+}
+
 // --- Tenant Management Logic ---
 // --- Tenant Management Logic (Fixed Room Names & Notice Status) ---
 async function loadTenants() {
@@ -581,6 +607,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('history-table-body')) loadHistory();
     // NEW: Load the active tenants into the payment form dropdown
     if (document.getElementById('p-tenant')) populateTenantDropdown();
+    // NEW: Initialize the room search bar on the Caretaker Dashboard
+    setupRoomSearch();
 });
 
 
