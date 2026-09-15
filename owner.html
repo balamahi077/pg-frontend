@@ -58,16 +58,33 @@
 
         <!-- Room List Filtered by Block -->
         <div class="bg-white p-6 rounded-lg shadow-md col-span-2">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-semibold">Building Overview</h2>
-                <select id="filter-block" class="p-2 border border-gray-300 rounded-md" onchange="loadRoomsByBlock()">
-                    <option value="ALL">All Blocks</option>
-                    <option value="A">Block A</option>
-                    <option value="B">Block B</option>
-                </select>
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <h2 class="text-xl font-bold">Building Overview</h2>
+                
+                <!-- Filters Container -->
+                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
+                    <!-- Existing Block Filter -->
+                    <select id="filter-block" onchange="loadRoomsByBlock()" class="p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <option value="ALL">All Blocks</option>
+                        <option value="A">Block A</option>
+                        <option value="B">Block B</option>
+                        <option value="C">Block C</option>
+                    </select>
+                    
+                    <!-- New Search Bar -->
+                    <div class="relative w-full sm:w-64">
+                        <input type="text" id="owner-room-search" placeholder="Search room, floor, rent..." 
+                               class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <svg class="w-4 h-4 text-gray-500 absolute left-2.5 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                </div>
             </div>
+
+            <!-- Existing Room List Container -->
             <div id="structured-room-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <p class="text-gray-500">Loading building data...</p>
+                <p class="text-gray-500 col-span-full">Loading rooms...</p>
             </div>
         </div>
 

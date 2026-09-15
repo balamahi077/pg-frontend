@@ -201,6 +201,31 @@ function setupRoomSearch() {
     });
 }
 
+
+// --- Owner Dashboard Room Search ---
+function setupOwnerRoomSearch() {
+    const ownerSearchInput = document.getElementById('owner-room-search');
+    if (!ownerSearchInput) return; // Only run on Owner Dashboard
+
+    ownerSearchInput.addEventListener('keyup', function() {
+        const query = this.value.toLowerCase();
+        // Select all room cards on the owner dashboard
+        const roomCards = document.querySelectorAll('#structured-room-list > div');
+
+        roomCards.forEach(card => {
+            // Get ALL text inside the card (Block, Room No, Rent, Type, Floor)
+            const textContent = card.textContent.toLowerCase();
+            
+            // If the card contains the typed query, show it. Otherwise, hide it.
+            if (textContent.includes(query)) {
+                card.style.display = ''; 
+            } else {
+                card.style.display = 'none'; 
+            }
+        });
+    });
+}
+
 // --- Tenant Management Logic ---
 // --- Tenant Management Logic (Fixed Room Names & Notice Status) ---
 async function loadTenants() {
@@ -608,7 +633,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // NEW: Load the active tenants into the payment form dropdown
     if (document.getElementById('p-tenant')) populateTenantDropdown();
     // NEW: Initialize the room search bar on the Caretaker Dashboard
-    setupRoomSearch();
+    setupRoomSearch();  // Caretaker search
+    setupOwnerRoomSearch(); // NEW: Owner search
 });
 
 
