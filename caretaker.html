@@ -18,6 +18,19 @@
         <div id="room-list" class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <p class="text-gray-500">Loading rooms from backend...</p>
         </div>
+
+        <!-- Room Occupants Modal (Hidden by default) -->
+        <div id="room-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
+            <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md relative">
+                <div class="flex justify-between items-center mb-4 border-b pb-2">
+                    <h2 id="modal-room-title" class="text-xl font-bold text-blue-700">Room Details</h2>
+                    <button onclick="closeRoomModal()" class="text-gray-400 hover:text-red-500 font-bold text-2xl">&times;</button>
+                </div>
+                <div id="modal-room-content" class="space-y-3 max-h-96 overflow-y-auto">
+                    <!-- Tenant details will be injected here by JavaScript -->
+                </div>
+            </div>
+        </div>
     </main>
 
     <!-- Link to our JavaScript file -->

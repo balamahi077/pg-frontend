@@ -46,32 +46,77 @@ if (loginForm) {
 }
 
 // Function to fetch and display rooms
+// --- Caretaker Dashboard Logic (Visual Occupancy & Modals) ---
+let globalRooms = []; // Stores rooms for the modal
+let globalTenants = []; // Stores tenants for the modal
+
 async function loadRooms() {
     const roomListContainer = document.getElementById('room-list');
+    if (!roomListContainer) return; // Only run on caretaker dashboard
     
     try {
-        // Call the Spring Boot backend
-        const response = await fetch(`${API_BASE_URL}/rooms`);
-        const rooms = await response.json();
+        // Fetch both rooms and ALL tenants to map who is where
+        const [roomsResponse, tenantsResponse] = await Promise.all([
+            fetch(`${API_BASE_URL}/rooms`),
+            fetch(`${API_BASE_URL}/tenants`)
+        ]);
         
-        // Clear the "Loading..." text
+        globalRooms = await roomsResponse.json();
+        const allTenants = await tenantsResponse.json();
+        
+        // Only count Active and On Notice people as physically in the room
+        globalTenants = allTenants.filter(t => t.status === 'ACTIVE' || t.status === 'ON_NOTICE');
+        
         roomListContainer.innerHTML = '';
         
-        // If no rooms exist yet
-        if (rooms.length === 0) {
-            roomListContainer.innerHTML = '<p class="text-gray-500">No rooms found. Add one via Postman to see it here.</p>';
+        if (globalRooms.length === 0) {
+            roomListContainer.innerHTML = '<p class="text-gray-500">No rooms found. Ask the owner to add rooms.</p>';
             return;
         }
 
-        // Generate HTML cards for each room
-        rooms.forEach(room => {
+        globalRooms.forEach(room => {
+            // Find who is in this specific room
+            const occupants = globalTenants.filter(t => t.roomId === room.id);
+            const occupiedCount = occupants.length;
+            const availableCount = room.totalBeds - occupiedCount;
+            
+            // Build the AbhiBus-style Bed Visuals
+            let bedVisuals = '';
+            for (let i = 0; i < room.totalBeds; i++) {
+                if (i < occupiedCount) {
+                    // Occupied Bed (Red Icon)
+                    bedVisuals += `
+                        <div class="w-8 h-8 rounded bg-red-100 border border-red-300 flex items-center justify-center text-red-600 shadow-sm" title="Occupied">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"></path></svg>
+                        </div>`;
+                } else {
+                    // Available Bed (Green Icon)
+                    bedVisuals += `
+                        <div class="w-8 h-8 rounded bg-green-100 border border-green-400 flex items-center justify-center text-green-700 shadow-sm font-bold text-xs" title="Available">
+                            FREE
+                        </div>`;
+                }
+            }
+
+            // Determine border color based on availability
+            const borderColor = availableCount > 0 ? 'border-blue-500' : 'border-red-500';
+            const statusBadge = availableCount > 0 
+                ? `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-bold">${availableCount} Left</span>` 
+                : `<span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full font-bold">FULL</span>`;
+
             const roomCard = `
-                <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-xl font-bold text-gray-700">Room ${room.roomNumber}</h3>
-                        <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">₹${room.monthlyRent}/mo</span>
+                <div onclick="openRoomModal(${room.id})" class="bg-white p-5 rounded-lg shadow-md border-l-4 ${borderColor} cursor-pointer hover:shadow-lg hover:-translate-y-1 transition transform duration-200">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-800">Block ${room.blockName} - Room ${room.roomNumber}</h3>
+                            <p class="text-xs text-gray-500 mt-1">${room.sharingType} | ₹${room.monthlyRent}/mo</p>
+                        </div>
+                        ${statusBadge}
                     </div>
-                    <p class="text-gray-600">Total Beds: <span class="font-semibold">${room.totalBeds}</span></p>
+                    <!-- Visual Bed Grid -->
+                    <div class="flex space-x-2 mt-4 bg-gray-50 p-3 rounded border border-gray-100">
+                        ${bedVisuals}
+                    </div>
                 </div>
             `;
             roomListContainer.innerHTML += roomCard;
@@ -79,10 +124,55 @@ async function loadRooms() {
 
     } catch (error) {
         console.error('Error fetching rooms:', error);
-        if (roomListContainer) {
-            roomListContainer.innerHTML = '<p class="text-red-500">Failed to connect to the server. Is Spring Boot running?</p>';
-        }
+        roomListContainer.innerHTML = '<p class="text-red-500">Failed to load dashboard data.</p>';
     }
+}
+
+
+
+function openRoomModal(roomId) {
+    const room = globalRooms.find(r => r.id === roomId);
+    const occupants = globalTenants.filter(t => t.roomId === roomId);
+    
+    // Set Modal Title
+    document.getElementById('modal-room-title').innerText = `Block ${room.blockName} - Room ${room.roomNumber}`;
+    
+    // Populate Occupants
+    const contentDiv = document.getElementById('modal-room-content');
+    
+    if (occupants.length === 0) {
+        contentDiv.innerHTML = `<div class="p-6 text-center text-gray-500 italic bg-gray-50 rounded">This room is completely vacant.</div>`;
+    } else {
+        contentDiv.innerHTML = occupants.map(tenant => {
+            const isNotice = tenant.status === 'ON_NOTICE';
+            const bgStyle = isNotice ? 'bg-yellow-50 border-yellow-200' : 'bg-blue-50 border-blue-200';
+            const badge = isNotice 
+                ? `<span class="bg-yellow-200 text-yellow-800 text-xs px-2 py-1 rounded font-bold">ON NOTICE</span>`
+                : `<span class="bg-blue-200 text-blue-800 text-xs px-2 py-1 rounded font-bold">ACTIVE</span>`;
+
+            return `
+                <div class="p-4 border rounded ${bgStyle} flex flex-col">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-bold text-gray-800 text-lg">${tenant.fullName}</span>
+                        ${badge}
+                    </div>
+                    <div class="text-sm text-gray-600 flex items-center mt-1">
+                        <span class="mr-2">📞</span> ${tenant.phoneNumber}
+                    </div>
+                    <div class="text-xs text-gray-500 mt-2">
+                        Joined: ${tenant.dateOfJoining}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    // Show Modal
+    document.getElementById('room-modal').classList.remove('hidden');
+}
+
+function closeRoomModal() {
+    document.getElementById('room-modal').classList.add('hidden');
 }
 
 // --- Tenant Management Logic ---
