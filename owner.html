@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans">
-    
+
     <div id="navbar-placeholder"></div>
 
     <main class="container mx-auto mt-8 p-4 grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -68,6 +68,30 @@
             </div>
             <div id="structured-room-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <p class="text-gray-500">Loading building data...</p>
+            </div>
+        </div>
+
+        <!-- Edit Room Modal (Hidden by default) -->
+        <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+            <div class="bg-white p-6 rounded-lg shadow-xl w-96">
+                <h2 class="text-xl font-bold mb-4 text-purple-700">Edit Room</h2>
+                <form id="edit-room-form" class="space-y-3">
+                    <input type="hidden" id="edit-id">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div><label class="text-sm">Block</label><input type="text" id="edit-block" class="w-full p-2 border rounded"></div>
+                        <div><label class="text-sm">Floor</label><input type="number" id="edit-floor" class="w-full p-2 border rounded"></div>
+                        <div><label class="text-sm">Room No</label><input type="text" id="edit-number" class="w-full p-2 border rounded"></div>
+                        <div><label class="text-sm">Type</label><select id="edit-type" class="w-full p-2 border rounded">
+                            <option value="SINGLE">Single</option><option value="DOUBLE">Double</option><option value="TRIPLE">Triple</option>
+                        </select></div>
+                        <div><label class="text-sm">Beds</label><input type="number" id="edit-beds" class="w-full p-2 border rounded"></div>
+                        <div><label class="text-sm">Rent (₹)</label><input type="number" id="edit-rent" class="w-full p-2 border rounded"></div>
+                    </div>
+                    <div class="flex justify-end space-x-2 mt-4">
+                        <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">Update</button>
+                    </div>
+                </form>
             </div>
         </div>
     </main>

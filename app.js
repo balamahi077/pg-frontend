@@ -310,6 +310,9 @@ if (addRoomForm) {
 }
 
 // Fetch Rooms by Block for Owner Dashboard
+let currentOwnerRooms = []; // Stores the current list so we can edit them easily
+
+// Fetch Rooms by Block for Owner Dashboard (Upgraded with Edit/Delete)
 async function loadRoomsByBlock() {
     const listContainer = document.getElementById('structured-room-list');
     if (!listContainer) return;
@@ -319,21 +322,102 @@ async function loadRoomsByBlock() {
 
     try {
         const response = await fetch(`${API_BASE_URL}${endpoint}`);
-        const rooms = await response.json();
+        currentOwnerRooms = await response.json();
         listContainer.innerHTML = '';
         
-        rooms.forEach(room => {
+        currentOwnerRooms.forEach(room => {
             listContainer.innerHTML += `
-                <div class="bg-gray-50 p-4 rounded border-l-4 border-purple-500">
-                    <h3 class="font-bold">Block ${room.blockName} - Room ${room.roomNumber}</h3>
-                    <p class="text-sm text-gray-600">Floor: ${room.floorNumber} | Type: ${room.sharingType}</p>
-                    <p class="text-sm text-gray-600">Beds: ${room.totalBeds} | Rent: ₹${room.monthlyRent}</p>
+                <div class="bg-gray-50 p-4 rounded border-l-4 border-purple-500 relative flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-bold text-lg text-gray-800">Block ${room.blockName} - Room ${room.roomNumber}</h3>
+                        <p class="text-sm text-gray-600 mt-1">Floor: ${room.floorNumber} | Type: ${room.sharingType}</p>
+                        <p class="text-sm text-gray-600 text-purple-700 font-semibold">Beds: ${room.totalBeds} | Rent: ₹${room.monthlyRent}</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-gray-200 flex justify-end space-x-4">
+                        <button onclick="openEditModal(${room.id})" class="text-blue-600 hover:text-blue-800 text-sm font-bold">Edit</button>
+                        <button onclick="deleteRoom(${room.id})" class="text-red-500 hover:text-red-700 text-sm font-bold">Delete</button>
+                    </div>
                 </div>
             `;
         });
     } catch (error) {
         listContainer.innerHTML = '<p class="text-red-500">Error loading rooms.</p>';
     }
+}
+
+// --- Owner CRUD Actions ---
+
+async function deleteRoom(roomId) {
+    if (!confirm("Are you sure you want to delete this room? This cannot be undone.")) return;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/rooms/${roomId}`, { method: 'DELETE' });
+        if (response.ok) {
+            alert('Room deleted successfully.');
+            loadRoomsByBlock(); // Refresh the list
+        } else {
+            alert('Cannot delete room. Ensure no tenants (active or past) are assigned to it first.');
+        }
+    } catch (error) {
+        console.error('Error deleting room:', error);
+    }
+}
+
+function openEditModal(roomId) {
+    // Find the specific room data from our current list
+    const room = currentOwnerRooms.find(r => r.id === roomId);
+    if (!room) return;
+
+    // Fill the modal with the current data
+    document.getElementById('edit-id').value = room.id;
+    document.getElementById('edit-block').value = room.blockName;
+    document.getElementById('edit-floor').value = room.floorNumber;
+    document.getElementById('edit-number').value = room.roomNumber;
+    document.getElementById('edit-type').value = room.sharingType;
+    document.getElementById('edit-beds').value = room.totalBeds;
+    document.getElementById('edit-rent').value = room.monthlyRent;
+
+    // Show the modal
+    document.getElementById('edit-modal').classList.remove('hidden');
+}
+
+function closeEditModal() {
+    document.getElementById('edit-modal').classList.add('hidden');
+}
+
+// Handle the Edit Form Submission
+const editRoomForm = document.getElementById('edit-room-form');
+if (editRoomForm) {
+    editRoomForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const roomId = document.getElementById('edit-id').value;
+        
+        const updatedRoom = {
+            blockName: document.getElementById('edit-block').value,
+            floorNumber: document.getElementById('edit-floor').value,
+            roomNumber: document.getElementById('edit-number').value,
+            sharingType: document.getElementById('edit-type').value,
+            totalBeds: document.getElementById('edit-beds').value,
+            monthlyRent: document.getElementById('edit-rent').value
+        };
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/rooms/${roomId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatedRoom)
+            });
+            if (response.ok) {
+                alert('Room updated successfully!');
+                closeEditModal();
+                loadRoomsByBlock(); // Refresh view
+            } else {
+                alert('Error updating room.');
+            }
+        } catch (error) {
+            console.error('Error updating room:', error);
+        }
+    });
 }
 
 // --- Caretaker Notice & Vacate Logic ---
