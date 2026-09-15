@@ -686,14 +686,14 @@ async function populateRoomDropdown() {
             const availableBeds = room.totalBeds - physicalOccupants.length;
 
             if (availableBeds > 0) {
-                const optionText = `Block ${room.blockName} - Room ${room.roomNumber} (${availableBeds} bed(s) available)`;
+                const optionText = `Block ${room.blockName} -  ${room.roomNumber} (${availableBeds} bed(s) available)`;
                 roomSelect.innerHTML += `<option value="${room.id}">${optionText}</option>`;
             } else {
                 // See if the room is full, but someone is leaving soon
                 const hasNotice = physicalOccupants.some(t => t.status === 'ON_NOTICE');
                 const fullText = hasNotice 
-                    ? `Block ${room.blockName} - Room ${room.roomNumber} (Full - Vacating Soon)` 
-                    : `Block ${room.blockName} - Room ${room.roomNumber} (FULL)`;
+                    ? `Block ${room.blockName} -  ${room.roomNumber} (Full - Vacating Soon)` 
+                    : `Block ${room.blockName} -  ${room.roomNumber} (FULL)`;
                 
                 roomSelect.innerHTML += `<option value="${room.id}" disabled class="text-red-400 bg-gray-50">${fullText}</option>`;
             }
@@ -706,14 +706,26 @@ async function populateRoomDropdown() {
 
 
 // --- Tenant History Logic ---
+// --- Tenant History Logic (Fixed Room Names & Null Dates) ---
 async function loadHistory() {
     const historyTableBody = document.getElementById('history-table-body');
     if (!historyTableBody) return;
 
     try {
-        // Fetch ALL tenants from the database
-        const response = await fetch(`${API_BASE_URL}/tenants`);
-        const allTenants = await response.json();
+        // Fetch ALL tenants and ALL rooms at the same time
+        const [tenantsResponse, roomsResponse] = await Promise.all([
+            fetch(`${API_BASE_URL}/tenants`),
+            fetch(`${API_BASE_URL}/rooms`)
+        ]);
+        
+        const allTenants = await tenantsResponse.json();
+        const rooms = await roomsResponse.json();
+
+        // Create a lookup dictionary: ID -> "Block A - Room 102"
+        const roomMap = {};
+        rooms.forEach(room => {
+            roomMap[room.id] = `Block ${room.blockName} -  ${room.roomNumber}`;
+        });
         
         // Filter out the ACTIVE tenants so we only see Notice and Vacated
         const pastTenants = allTenants.filter(tenant => tenant.status !== 'ACTIVE');
@@ -733,16 +745,24 @@ async function loadHistory() {
                 ? '<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded font-bold">ON NOTICE</span>' 
                 : '<span class="bg-gray-200 text-gray-800 text-xs px-2 py-1 rounded font-bold">VACATED</span>';
 
+            // Safely handle missing dates (fixes the "Left on: null" bug)
+            const safeNoticeDate = tenant.noticeDate ? tenant.noticeDate : 'Not specified';
+            const safeVacateDate = tenant.vacateDate ? tenant.vacateDate : 'Not specified';
+
             // Display the relevant date based on their status
             const dateInfo = isNotice 
-                ? `<span class="text-yellow-600">Notice Given: ${tenant.noticeDate}</span>` 
-                : `<span class="text-red-500">Left on: ${tenant.vacateDate}</span>`;
+                ? `<span class="text-yellow-600 font-bold">Notice Given: ${safeNoticeDate}</span>` 
+                : `<span class="text-red-500">Left on: ${safeVacateDate}</span>`;
+
+            // Get the real room name using our dictionary
+            // If the owner deleted the room, it will fall back to showing the ID safely
+            const realRoomName = roomMap[tenant.roomId] || `Deleted Room (ID ${tenant.roomId})`;
 
             const row = `
                 <tr class="hover:bg-gray-50 border-b">
                     <td class="p-3 font-medium">${tenant.fullName}</td>
                     <td class="p-3 text-gray-600">${tenant.phoneNumber}</td>
-                    <td class="p-3 font-semibold text-blue-600">Room ${tenant.roomId}</td>
+                    <td class="p-3 font-semibold text-blue-600">${realRoomName}</td>
                     <td class="p-3">${statusBadge}</td>
                     <td class="p-3 text-sm font-medium">${dateInfo}</td>
                 </tr>
@@ -820,7 +840,7 @@ async function populateTenantDropdown() {
         const response = await fetch(`${API_BASE_URL}/tenants/active`);
         const tenants = await response.json();
         
-        tenantSelect.innerHTML = '<option value="" disabled selected>Select a Tenant...</option>';
+        tenantSelect.innerHTML = '<option value="" disabled selected>Select a Customer...</option>';
         
         tenants.forEach(tenant => {
             // Displays: Rahul Sharma - Room 101 (9876543210)
@@ -828,7 +848,7 @@ async function populateTenantDropdown() {
             tenantSelect.innerHTML += `<option value="${tenant.id}">${optionText}</option>`;
         });
     } catch (error) {
-        console.error('Error fetching tenants for dropdown:', error);
-        tenantSelect.innerHTML = '<option value="" disabled>Error loading tenants</option>';
+        console.error('Error fetching Customer for dropdown:', error);
+        tenantSelect.innerHTML = '<option value="" disabled>Error loading Customer</option>';
     }
 }
