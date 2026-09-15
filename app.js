@@ -892,7 +892,7 @@ function loadNavbar() {
         // Caretaker Navbar (Includes a button to go back to Owner View if the Owner is logged in)
         links = `
             <li><a href="caretaker.html" class="${active('caretaker.html')}">Dashboard</a></li>
-            <li><a href="tenants.html" class="${active('tenants.html')}">Tenants</a></li>
+            <li><a href="tenants.html" class="${active('tenants.html')}">Customers</a></li>
             <li><a href="payments.html" class="${active('payments.html')}">Payments</a></li>
             <li><a href="history.html" class="${active('history.html')}">History</a></li>
             ${role === 'OWNER' ? '<li><a href="owner.html" class="text-purple-300 hover:text-purple-100 ml-4 font-bold border-l pl-4">Owner View</a></li>' : ''}
