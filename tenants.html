@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tenants - PG Manager</title>
+    <title>Customer - PG Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans">
@@ -12,7 +12,7 @@
     <main class="container mx-auto mt-8 p-4 grid grid-cols-1 md:grid-cols-3 gap-6">
         <!-- Add Tenant Form -->
         <div class="bg-white p-6 rounded-lg shadow-md col-span-1 h-fit">
-            <h2 class="text-xl font-semibold mb-4">Add New Tenant</h2>
+            <h2 class="text-xl font-semibold mb-4">Add New Customer</h2>
             <form id="add-tenant-form" class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Full Name</label>
@@ -44,7 +44,7 @@
         <!-- Tenant List -->
         <div class="bg-white p-6 rounded-lg shadow-md col-span-2">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-                <h2 class="text-xl font-semibold">Active Tenants</h2>
+                <h2 class="text-xl font-semibold">Active Customer</h2>
                 <!-- New Search Bar -->
                 <div class="relative w-full sm:w-64">
                     <input type="text" id="tenant-search" placeholder="Search by name, phone, or room..." 
@@ -65,7 +65,7 @@
                         </tr>
                     </thead>
                     <tbody id="tenant-table-body">
-                        <tr><td colspan="3" class="p-3 text-gray-500 text-center">Loading tenants...</td></tr>
+                        <tr><td colspan="3" class="p-3 text-gray-500 text-center">Loading Customer...</td></tr>
                     </tbody>
                 </table>
             </div>
