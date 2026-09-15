@@ -345,7 +345,10 @@ async function putOnNotice(tenantId) {
         const response = await fetch(`${API_BASE_URL}/tenants/${tenantId}/notice?noticeDate=${noticeDate}`, { method: 'PUT' });
         if (response.ok) {
             alert('Tenant is now on notice period.');
-            loadTenants(); // Refresh table
+            loadTenants(); // Refresh active list
+            if (document.getElementById('history-table-body')) loadHistory(); // Refresh history if visible
+        } else {
+            alert('Error updating notice status.');
         }
     } catch (error) {
         console.error('Error putting on notice:', error);
@@ -359,10 +362,30 @@ async function cancelNotice(tenantId) {
         const response = await fetch(`${API_BASE_URL}/tenants/${tenantId}/cancel-notice`, { method: 'PUT' });
         if (response.ok) {
             alert('Notice cancelled successfully.');
-            loadTenants(); // Refresh table to show them as Active
+            loadTenants(); // Refresh active list
+        } else {
+            alert('Error canceling notice.');
         }
     } catch (error) {
         console.error('Error canceling notice:', error);
+    }
+}
+
+async function vacateTenant(tenantId) {
+    const vacateDate = prompt("Enter official vacate date (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
+    if (!vacateDate) return;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/tenants/${tenantId}/vacate?vacateDate=${vacateDate}`, { method: 'PUT' });
+        if (response.ok) {
+            alert('Tenant has officially vacated the room.');
+            loadTenants(); // Hides them from the Active list
+            if (document.getElementById('history-table-body')) loadHistory(); // Refreshes the History page
+        } else {
+            alert('Failed to vacate tenant. Please check server connection.');
+        }
+    } catch (error) {
+        console.error('Error vacating tenant:', error);
     }
 }
 
