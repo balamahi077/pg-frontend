@@ -344,44 +344,158 @@ if (addTenantForm) {
 }
 
 // --- Payment Management Logic ---
+// --- Payment Management Logic (Fixed Dates, Names, and Modals) ---
+// --- Payment Management Logic (Upgraded with Raw Date for Filtering) ---
 async function loadPayments() {
     const paymentTableBody = document.getElementById('payment-table-body');
-    if (!paymentTableBody) return; // Only run on payments.html
+    
+    if (!paymentTableBody) return;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/payments`);
-        const payments = await response.json();
+        // Fetch ALL tenants (even past ones) and rooms so we can map their names on old payments
+        const [paymentsRes, tenantsRes, roomsRes] = await Promise.all([
+            fetch(`${API_BASE_URL}/payments`),
+            fetch(`${API_BASE_URL}/tenants`),
+            fetch(`${API_BASE_URL}/rooms`)
+        ]);
         
+        const payments = await paymentsRes.json();
+        const allTenants = await tenantsRes.json();
+        const rooms = await roomsRes.json();
+        
+        // Map Room IDs to Block-Room Name
+        const roomMap = {};
+        rooms.forEach(room => roomMap[room.id] = `Block ${room.blockName} - Room ${room.roomNumber}`);
+
+        // Map Tenant IDs to Name & Room
+        const tenantMap = {};
+        allTenants.forEach(t => {
+            tenantMap[t.id] = { name: t.fullName, room: roomMap[t.roomId] || `Room ${t.roomId}` };
+        });
+
         paymentTableBody.innerHTML = '';
         
         if (payments.length === 0) {
-            paymentTableBody.innerHTML = '<tr><td colspan="5" class="p-3 text-center text-gray-500">No payments recorded yet.</td></tr>';
+            paymentTableBody.innerHTML = '<tr><td colspan="6" class="p-3 text-center text-gray-500">No payments recorded yet.</td></tr>';
             return;
         }
 
-        // Sort payments by date descending (newest first)
         payments.reverse().forEach(payment => {
-            const dateStr = new Date(payment.paymentDate).toLocaleDateString();
+            // Format Date to DD/MM/YYYY
+            const d = new Date(payment.paymentDate);
+            const dateStr = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth()+1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+            
+            // Map the Customer details
+            const customer = tenantMap[payment.tenantId] || { name: `Unknown (#${payment.tenantId})`, room: 'Unknown Room' };
+            const customerHtml = `
+                <div class="font-bold text-gray-800">${customer.name}</div>
+                <div class="text-xs text-gray-500">${customer.room}</div>
+            `;
+
             const modeStyle = payment.paymentMode === 'CASH' ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800';
             
+            // Handle Reference Note Modal
+            const safeNote = payment.referenceNote ? payment.referenceNote.replace(/'/g, "\\'") : 'No reference note provided.';
+            const refBtn = `<button onclick="viewRefNote('${safeNote}')" class="text-blue-500 hover:underline text-sm font-semibold px-2 py-1 bg-gray-100 rounded print:hidden">View</button>`;
+            
+            // We store data-month and data-raw-date for easy filtering
+            // We store data-month, data-raw-date, and data-amount for easy filtering and math
             const row = `
-                <tr class="hover:bg-gray-50">
-                    <td class="p-3 border-b text-gray-500">${dateStr}</td>
-                    <td class="p-3 border-b font-bold">#${payment.tenantId}</td>
-                    <td class="p-3 border-b">${payment.monthYear}</td>
-                    <td class="p-3 border-b font-semibold text-green-600">₹${payment.amountPaid}</td>
-                    <td class="p-3 border-b">
+                <tr class="hover:bg-gray-50 border-b payment-row" data-month="${payment.monthYear}" data-raw-date="${payment.paymentDate.split('T')[0]}" data-amount="${payment.amountPaid}">
+                    <td class="p-3 text-gray-600 font-medium">${dateStr}</td>
+                    <td class="p-3">${customerHtml}</td>
+                    <td class="p-3 text-gray-700">${payment.monthYear}</td>
+                    <td class="p-3 font-semibold text-green-600 text-right">₹${payment.amountPaid}</td>
+                    <td class="p-3 text-center">
                         <span class="${modeStyle} text-xs px-2 py-1 rounded-full font-bold">${payment.paymentMode}</span>
                     </td>
+                    <td class="p-3 text-center print:hidden">${refBtn}</td>
                 </tr>
             `;
             paymentTableBody.innerHTML += row;
         });
+        if(typeof setupPaymentSearch === 'function') setupPaymentSearch();
 
     } catch (error) {
         console.error('Error fetching payments:', error);
-        paymentTableBody.innerHTML = '<tr><td colspan="5" class="p-3 text-red-500">Failed to load payments.</td></tr>';
+        paymentTableBody.innerHTML = '<tr><td colspan="6" class="p-3 text-red-500">Failed to load payments.</td></tr>';
     }
+}
+
+// --- Payment Modals & Search Filters ---
+function viewRefNote(note) {
+    document.getElementById('ref-modal-text').innerText = note;
+    document.getElementById('ref-modal').classList.remove('hidden');
+}
+
+function closeRefModal() {
+    document.getElementById('ref-modal').classList.add('hidden');
+}
+
+// --- Payment Search & PDF Logic ---
+// --- Payment Search, Total Calculation & PDF Logic ---
+function setupPaymentSearch() {
+    const searchInput = document.getElementById('search-payment');
+    const monthFilter = document.getElementById('filter-payment-month');
+    const fromDateInput = document.getElementById('filter-from-date');
+    const toDateInput = document.getElementById('filter-to-date');
+    const printBtn = document.getElementById('print-pdf-btn');
+    const totalAmountDisplay = document.getElementById('filtered-total-amount');
+
+    if (!searchInput || !monthFilter || !fromDateInput || !toDateInput) return;
+
+    function filterTable() {
+        const query = searchInput.value.toLowerCase();
+        const selectedMonth = monthFilter.value;
+        const fromDate = fromDateInput.value;
+        const toDate = toDateInput.value;
+        
+        const rows = document.querySelectorAll('.payment-row');
+        let currentTotal = 0; // NEW: Variable to hold the sum
+
+        // Toggle PDF Button
+        if (fromDate && toDate) {
+            printBtn.classList.remove('hidden');
+        } else {
+            printBtn.classList.add('hidden');
+        }
+
+        rows.forEach(row => {
+            const textContent = row.textContent.toLowerCase();
+            const rowMonth = row.getAttribute('data-month');
+            const rowDate = row.getAttribute('data-raw-date'); 
+            const rowAmount = parseFloat(row.getAttribute('data-amount')) || 0; // NEW: Get the money
+            
+            const matchesSearch = textContent.includes(query);
+            const matchesMonth = selectedMonth === 'ALL' || rowMonth === selectedMonth;
+            
+            let matchesDateRange = true;
+            if (fromDate && toDate) {
+                matchesDateRange = (rowDate >= fromDate && rowDate <= toDate);
+            }
+
+            if (matchesSearch && matchesMonth && matchesDateRange) {
+                row.style.display = '';
+                currentTotal += rowAmount; // NEW: Add to total if visible
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // NEW: Update the footer with the calculated total
+        if (totalAmountDisplay) {
+            totalAmountDisplay.innerText = `₹${currentTotal}`;
+        }
+    }
+
+    // Attach listeners
+    searchInput.addEventListener('keyup', filterTable);
+    monthFilter.addEventListener('change', filterTable);
+    fromDateInput.addEventListener('change', filterTable);
+    toDateInput.addEventListener('change', filterTable);
+    
+    // Run once immediately to calculate the total on page load
+    filterTable();
 }
 
 // Handle Payment Form Submission
@@ -614,28 +728,6 @@ async function vacateTenant(tenantId) {
     }
 }
 
-// --- Unified Page Load Logic (CLEANED) ---
-document.addEventListener('DOMContentLoaded', () => {
-    // Auth guard check
-    checkAuth();
-    loadNavbar(); // NEW: Injects the navigation bar
-
-    // Load data based on which page we are currently on
-    if (document.getElementById('room-list')) loadRooms(); 
-    if (document.getElementById('tenant-table-body')) loadTenants();
-    if (document.getElementById('payment-table-body')) loadPayments();
-    if (document.getElementById('structured-room-list')) loadRoomsByBlock();
-
-    // NEW: Load the room dropdown options if the field exists
-    if (document.getElementById('t-room')) populateRoomDropdown();
-    // NEW: Load the history table if it exists on the page
-    if (document.getElementById('history-table-body')) loadHistory();
-    // NEW: Load the active tenants into the payment form dropdown
-    if (document.getElementById('p-tenant')) populateTenantDropdown();
-    // NEW: Initialize the room search bar on the Caretaker Dashboard
-    setupRoomSearch();  // Caretaker search
-    setupOwnerRoomSearch(); // NEW: Owner search
-});
 
 
 // --- Tenant Search Logic ---
@@ -831,24 +923,57 @@ function logout() {
 
 
 // --- Populate Tenant Dropdown in Payment Form ---
+// --- Populate Tenant Dropdown (Fixed Room Names) ---
 async function populateTenantDropdown() {
     const tenantSelect = document.getElementById('p-tenant');
-    // Only run this if we are on the payments page and the element is a dropdown
     if (!tenantSelect || tenantSelect.tagName !== 'SELECT') return;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/tenants/active`);
-        const tenants = await response.json();
+        const [tenantsResponse, roomsResponse] = await Promise.all([
+            fetch(`${API_BASE_URL}/tenants/active`),
+            fetch(`${API_BASE_URL}/rooms`)
+        ]);
+        const tenants = await tenantsResponse.json();
+        const rooms = await roomsResponse.json();
         
+        const roomMap = {};
+        rooms.forEach(room => roomMap[room.id] = `Block ${room.blockName} - Room ${room.roomNumber}`);
+
         tenantSelect.innerHTML = '<option value="" disabled selected>Select a Customer...</option>';
         
         tenants.forEach(tenant => {
-            // Displays: Rahul Sharma - Room 101 (9876543210)
-            const optionText = `${tenant.fullName} - Room ${tenant.roomId} (${tenant.phoneNumber})`;
+            const roomName = roomMap[tenant.roomId] || `Room ${tenant.roomId}`;
+            const optionText = `${tenant.fullName} - ${roomName} (${tenant.phoneNumber})`;
             tenantSelect.innerHTML += `<option value="${tenant.id}">${optionText}</option>`;
         });
     } catch (error) {
-        console.error('Error fetching Customer for dropdown:', error);
-        tenantSelect.innerHTML = '<option value="" disabled>Error loading Customer</option>';
+        console.error('Error fetching data for dropdown:', error);
     }
 }
+
+
+
+
+// --- Unified Page Load Logic (CLEANED) ---
+document.addEventListener('DOMContentLoaded', () => {
+    // Auth guard check
+    checkAuth();
+    loadNavbar(); // NEW: Injects the navigation bar
+
+    // Load data based on which page we are currently on
+    if (document.getElementById('room-list')) loadRooms(); 
+    if (document.getElementById('tenant-table-body')) loadTenants();
+    if (document.getElementById('payment-table-body')) loadPayments();
+    if (document.getElementById('structured-room-list')) loadRoomsByBlock();
+
+    // NEW: Load the room dropdown options if the field exists
+    if (document.getElementById('t-room')) populateRoomDropdown();
+    // NEW: Load the history table if it exists on the page
+    if (document.getElementById('history-table-body')) loadHistory();
+    // NEW: Load the active tenants into the payment form dropdown
+    if (document.getElementById('p-tenant')) populateTenantDropdown();
+    // NEW: Initialize the room search bar on the Caretaker Dashboard
+    setupRoomSearch();  // Caretaker search
+    setupOwnerRoomSearch(); // NEW: Owner search
+    setupPaymentSearch(); // NEW: Payments filtering
+});
