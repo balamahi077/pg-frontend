@@ -209,6 +209,107 @@ function setupRoomSearch() {
     });
 }
 
+// --- Pending Rent Checker Logic ---
+
+function openPendingModal() {
+    document.getElementById('pending-modal').classList.remove('hidden');
+    document.getElementById('pending-results').innerHTML = ''; // Clear old results
+    document.getElementById('pending-month').value = ''; // Reset dropdown
+}
+
+function closePendingModal() {
+    document.getElementById('pending-modal').classList.add('hidden');
+}
+
+async function checkPendingRent() {
+    const month = document.getElementById('pending-month').value;
+    const year = document.getElementById('pending-year').value;
+    const resultsContainer = document.getElementById('pending-results');
+    
+    if (!month) {
+        alert('Please select a month first.');
+        return;
+    }
+
+    // NEW: Combine month and year to match database format exactly
+    const targetMonthYear = `${month} ${year}`; 
+
+    resultsContainer.innerHTML = '<p class="text-gray-500 text-center py-4">Scanning records...</p>';
+
+    try {
+        const [tenantsRes, roomsRes, paymentsRes] = await Promise.all([
+            fetch(`${API_BASE_URL}/tenants`),
+            fetch(`${API_BASE_URL}/rooms`),
+            fetch(`${API_BASE_URL}/payments`)
+        ]);
+
+        const allTenants = await tenantsRes.json();
+        const rooms = await roomsRes.json();
+        const payments = await paymentsRes.json();
+
+        const roomMap = {};
+        rooms.forEach(room => roomMap[room.id] = `Block ${room.blockName} - Room ${room.roomNumber}`);
+
+        const activeTenants = allTenants.filter(t => t.status === 'ACTIVE' || t.status === 'ON_NOTICE');
+        
+        // NEW: Filter against the combined targetMonthYear (e.g., "September 2026")
+        const paidTenantIds = payments
+            .filter(p => p.monthYear === targetMonthYear)
+            .map(p => p.tenantId);
+
+        const pendingTenants = activeTenants.filter(t => !paidTenantIds.includes(t.id));
+
+        if (pendingTenants.length === 0) {
+            resultsContainer.innerHTML = `
+                <div class="bg-green-50 text-green-700 p-4 rounded-md text-center border border-green-200">
+                    <span class="font-bold text-lg">🎉 Great News!</span><br>
+                    All active tenants have paid their rent for ${targetMonthYear}.
+                </div>`;
+            return;
+        }
+
+        let html = `
+            <div class="flex justify-between items-center mb-2 mt-4">
+                <h3 class="font-bold text-red-600">${pendingTenants.length} Tenants Pending for ${targetMonthYear}</h3>
+            </div>
+            <div class="overflow-y-auto max-h-64 border rounded-md shadow-inner">
+                <table class="min-w-full text-left text-sm">
+                    <thead class="bg-red-50 sticky top-0">
+                        <tr>
+                            <th class="p-3 border-b text-red-800">Name</th>
+                            <th class="p-3 border-b text-red-800">Room</th>
+                            <th class="p-3 border-b text-red-800">Phone</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        pendingTenants.sort((a, b) => {
+            const roomA = roomMap[a.roomId] || '';
+            const roomB = roomMap[b.roomId] || '';
+            return roomA.localeCompare(roomB);
+        });
+
+        pendingTenants.forEach(t => {
+            const roomName = roomMap[t.roomId] || `Room ID ${t.roomId}`;
+            html += `
+                <tr class="border-b hover:bg-red-50 bg-white">
+                    <td class="p-3 font-medium text-gray-800">${t.fullName}</td>
+                    <td class="p-3 font-semibold text-gray-700">${roomName}</td>
+                    <td class="p-3 text-blue-600"><a href="tel:${t.phoneNumber}">${t.phoneNumber}</a></td>
+                </tr>
+            `;
+        });
+
+        html += `</tbody></table></div>`;
+        resultsContainer.innerHTML = html;
+
+    } catch (error) {
+        console.error('Error checking pending rent:', error);
+        resultsContainer.innerHTML = '<p class="text-red-500 text-center py-4">Failed to fetch data. Check your connection.</p>';
+    }
+}
+
 // --- Owner Dashboard Room Search ---
 function setupOwnerRoomSearch() {
     const ownerSearchInput = document.getElementById('owner-room-search');
@@ -501,14 +602,18 @@ function setupPaymentSearch() {
 }
 
 // Handle Payment Form Submission
+// Handle Payment Form Submission
 const recordPaymentForm = document.getElementById('record-payment-form');
 if (recordPaymentForm) {
     recordPaymentForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
+        // NEW: Grab both month and year, combine into "September 2026"
+        const combinedMonthYear = `${document.getElementById('p-month').value} ${document.getElementById('p-year').value}`;
+
         const newPayment = {
             tenantId: document.getElementById('p-tenant').value,
-            monthYear: document.getElementById('p-month').value,
+            monthYear: combinedMonthYear, // Saves the new combined string
             amountPaid: document.getElementById('p-amount').value,
             paymentMode: document.getElementById('p-mode').value,
             referenceNote: document.getElementById('p-ref').value

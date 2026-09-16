@@ -12,36 +12,89 @@
 
     <!-- Main Content Area -->
     <main class="container mx-auto mt-8 p-4">
+        <!-- Dashboard Header with Search and Pending Button -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
             <h2 class="text-2xl font-bold text-gray-800">Live Occupancy Dashboard</h2>
             
-            <!-- Room Search Bar -->
-            <div class="relative w-full sm:w-72">
-                <input type="text" id="room-search" placeholder="Search by block or room no..." 
-                       class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <svg class="w-4 h-4 text-gray-500 absolute left-2.5 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                </svg>
+            <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                <!-- NEW: Pending Rent Button -->
+                <button onclick="openPendingModal()" class="w-full sm:w-auto bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md font-bold text-sm shadow-sm flex items-center justify-center whitespace-nowrap">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Pending Rent
+                </button>
+
+                <!-- Room Search Bar -->
+                <div class="relative w-full sm:w-72">
+                    <input type="text" id="room-search" placeholder="Search by block or room no..." 
+                           class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <svg class="w-4 h-4 text-gray-500 absolute left-2.5 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
             </div>
         </div>
 
-        <div id="room-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div id="room-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <p class="text-gray-500 col-span-full">Loading rooms...</p>
         </div>
-
-        <!-- Room Occupants Modal (Hidden by default) -->
-        <div id="room-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
-            <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md relative">
-                <div class="flex justify-between items-center mb-4 border-b pb-2">
-                    <h2 id="modal-room-title" class="text-xl font-bold text-blue-700">Room Details</h2>
-                    <button onclick="closeRoomModal()" class="text-gray-400 hover:text-red-500 font-bold text-2xl">&times;</button>
-                </div>
-                <div id="modal-room-content" class="space-y-3 max-h-96 overflow-y-auto">
-                    <!-- Tenant details will be injected here by JavaScript -->
-                </div>
-            </div>
-        </div>
     </main>
+
+    <!-- Room Occupants Modal (Existing) -->
+    <div id="room-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md relative">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h2 id="modal-room-title" class="text-xl font-bold text-blue-700">Room Details</h2>
+                <button onclick="closeRoomModal()" class="text-gray-400 hover:text-red-500 font-bold text-2xl">&times;</button>
+            </div>
+            <div id="modal-room-content" class="space-y-3 max-h-96 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <!-- NEW: Pending Rent Modal -->
+    <div id="pending-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg relative">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h2 class="text-xl font-bold text-red-600 flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Check Pending Rent
+                </h2>
+                <button onclick="closePendingModal()" class="text-gray-400 hover:text-red-500 font-bold text-2xl">&times;</button>
+            </div>
+            
+            <div class="flex gap-2 mb-4">
+                <!-- Month Dropdown -->
+                <select id="pending-month" class="w-full p-2 border border-gray-300 rounded-md bg-white">
+                    <option value="" disabled selected>Month...</option>
+                    <option value="January">January</option>
+                    <option value="February">February</option>
+                    <option value="March">March</option>
+                    <option value="April">April</option>
+                    <option value="May">May</option>
+                    <option value="June">June</option>
+                    <option value="July">July</option>
+                    <option value="August">August</option>
+                    <option value="September">September</option>
+                    <option value="October">October</option>
+                    <option value="November">November</option>
+                    <option value="December">December</option>
+                </select>
+                
+                <!-- NEW: Year Dropdown -->
+                <select id="pending-year" class="w-32 p-2 border border-gray-300 rounded-md bg-white">
+                    <option value="2026" selected>2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                    <option value="2029">2029</option>
+                    <option value="2030">2030</option>
+                </select>
+                
+                <button onclick="checkPendingRent()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-bold whitespace-nowrap">Check</button>
+            </div>
+
+            <!-- Results will be injected here -->
+            <div id="pending-results" class="min-h-[100px]"></div>
+        </div>
+    </div>
 
     <!-- Link to our JavaScript file -->
     <script src="app.js"></script>
