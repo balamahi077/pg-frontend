@@ -1,8 +1,6 @@
 const API_BASE_URL = 'https://pg-backend-8fi9.onrender.com/api';
 
 // --- Authentication Logic ---
-const CARETAKER_PIN = "1234"; // Change this to your preferred PIN
-const OWNER_PIN = "9999";     // Change this to the Owner's preferred PIN
 
 function checkAuth() {
     // If we are already on the login page, do nothing
@@ -15,7 +13,7 @@ function checkAuth() {
     
     if (!userRole) {
         // Kick them back to login if they try to bypass it
-        window.location.href = 'index.html'; // FIXED: Now routes to index.html
+        window.location.href = 'index.html'; 
     }
 
     // Restrict Caretakers from accessing the Owner Dashboard
@@ -25,27 +23,39 @@ function checkAuth() {
     }
 }
 
-// Handle Login Submission
+// Handle Login Submission (Secure Backend Validation)
 const loginForm = document.getElementById('login-form');
 if (loginForm) {
-    loginForm.addEventListener('submit', (e) => {
+    loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const enteredPin = document.getElementById('pin-input').value;
         const errorMsg = document.getElementById('login-error');
 
-        if (enteredPin === CARETAKER_PIN) {
-            sessionStorage.setItem('pg_role', 'CARETAKER');
-            window.location.href = 'caretaker.html'; // Send to Caretaker Dashboard
-        } else if (enteredPin === OWNER_PIN) {
-            sessionStorage.setItem('pg_role', 'OWNER');
-            window.location.href = 'owner.html'; // Send to Owner Dashboard
-        } else {
-            errorMsg.classList.remove('hidden');
+        try {
+            const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin: enteredPin })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                sessionStorage.setItem('pg_role', data.role);
+                window.location.href = data.role === 'OWNER' ? 'owner.html' : 'caretaker.html';
+            } else {
+                if (errorMsg) {
+                    errorMsg.classList.remove('hidden');
+                } else {
+                    alert('Invalid PIN. Please try again.');
+                }
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            alert('Server error. Please try again later.');
         }
     });
 }
 
-// Function to fetch and display rooms
 // --- Caretaker Dashboard Logic (Visual Occupancy & Modals) ---
 let globalRooms = []; // Stores rooms for the modal
 let globalTenants = []; // Stores tenants for the modal
@@ -128,8 +138,6 @@ async function loadRooms() {
     }
 }
 
-
-
 function openRoomModal(roomId) {
     const room = globalRooms.find(r => r.id === roomId);
     const occupants = globalTenants.filter(t => t.roomId === roomId);
@@ -201,7 +209,6 @@ function setupRoomSearch() {
     });
 }
 
-
 // --- Owner Dashboard Room Search ---
 function setupOwnerRoomSearch() {
     const ownerSearchInput = document.getElementById('owner-room-search');
@@ -226,7 +233,6 @@ function setupOwnerRoomSearch() {
     });
 }
 
-// --- Tenant Management Logic ---
 // --- Tenant Management Logic (Fixed Room Names & Notice Status) ---
 async function loadTenants() {
     const tenantTableBody = document.getElementById('tenant-table-body');
@@ -343,8 +349,6 @@ if (addTenantForm) {
     });
 }
 
-// --- Payment Management Logic ---
-// --- Payment Management Logic (Fixed Dates, Names, and Modals) ---
 // --- Payment Management Logic (Upgraded with Raw Date for Filtering) ---
 async function loadPayments() {
     const paymentTableBody = document.getElementById('payment-table-body');
@@ -398,7 +402,6 @@ async function loadPayments() {
             const safeNote = payment.referenceNote ? payment.referenceNote.replace(/'/g, "\\'") : 'No reference note provided.';
             const refBtn = `<button onclick="viewRefNote('${safeNote}')" class="text-blue-500 hover:underline text-sm font-semibold px-2 py-1 bg-gray-100 rounded print:hidden">View</button>`;
             
-            // We store data-month and data-raw-date for easy filtering
             // We store data-month, data-raw-date, and data-amount for easy filtering and math
             const row = `
                 <tr class="hover:bg-gray-50 border-b payment-row" data-month="${payment.monthYear}" data-raw-date="${payment.paymentDate.split('T')[0]}" data-amount="${payment.amountPaid}">
@@ -432,7 +435,6 @@ function closeRefModal() {
     document.getElementById('ref-modal').classList.add('hidden');
 }
 
-// --- Payment Search & PDF Logic ---
 // --- Payment Search, Total Calculation & PDF Logic ---
 function setupPaymentSearch() {
     const searchInput = document.getElementById('search-payment');
@@ -451,7 +453,7 @@ function setupPaymentSearch() {
         const toDate = toDateInput.value;
         
         const rows = document.querySelectorAll('.payment-row');
-        let currentTotal = 0; // NEW: Variable to hold the sum
+        let currentTotal = 0; // Variable to hold the sum
 
         // Toggle PDF Button
         if (fromDate && toDate) {
@@ -464,7 +466,7 @@ function setupPaymentSearch() {
             const textContent = row.textContent.toLowerCase();
             const rowMonth = row.getAttribute('data-month');
             const rowDate = row.getAttribute('data-raw-date'); 
-            const rowAmount = parseFloat(row.getAttribute('data-amount')) || 0; // NEW: Get the money
+            const rowAmount = parseFloat(row.getAttribute('data-amount')) || 0; // Get the money
             
             const matchesSearch = textContent.includes(query);
             const matchesMonth = selectedMonth === 'ALL' || rowMonth === selectedMonth;
@@ -476,13 +478,13 @@ function setupPaymentSearch() {
 
             if (matchesSearch && matchesMonth && matchesDateRange) {
                 row.style.display = '';
-                currentTotal += rowAmount; // NEW: Add to total if visible
+                currentTotal += rowAmount; // Add to total if visible
             } else {
                 row.style.display = 'none';
             }
         });
 
-        // NEW: Update the footer with the calculated total
+        // Update the footer with the calculated total
         if (totalAmountDisplay) {
             totalAmountDisplay.innerText = `₹${currentTotal}`;
         }
@@ -567,7 +569,6 @@ if (addRoomForm) {
 // Fetch Rooms by Block for Owner Dashboard
 let currentOwnerRooms = []; // Stores the current list so we can edit them easily
 
-// Fetch Rooms by Block for Owner Dashboard (Upgraded with Edit/Delete)
 async function loadRoomsByBlock() {
     const listContainer = document.getElementById('structured-room-list');
     if (!listContainer) return;
@@ -601,7 +602,6 @@ async function loadRoomsByBlock() {
 }
 
 // --- Owner CRUD Actions ---
-
 async function deleteRoom(roomId) {
     if (!confirm("Are you sure you want to delete this room? This cannot be undone.")) return;
 
@@ -728,11 +728,8 @@ async function vacateTenant(tenantId) {
     }
 }
 
-
-
 // --- Tenant Search Logic ---
 const tenantSearchInput = document.getElementById('tenant-search');
-
 if (tenantSearchInput) {
     tenantSearchInput.addEventListener('keyup', function() {
         const query = this.value.toLowerCase();
@@ -796,8 +793,6 @@ async function populateRoomDropdown() {
     }
 }
 
-
-// --- Tenant History Logic ---
 // --- Tenant History Logic (Fixed Room Names & Null Dates) ---
 async function loadHistory() {
     const historyTableBody = document.getElementById('history-table-body');
@@ -868,35 +863,30 @@ async function loadHistory() {
     }
 }
 
-// --- Dynamic Navbar & Logout ---
+// --- Dynamic Responsive Navbar & Logout ---
 function loadNavbar() {
     const navbarPlaceholder = document.getElementById('navbar-placeholder');
-    if (!navbarPlaceholder) return; // Skip if on the login page
+    if (!navbarPlaceholder) return;
 
     const currentPage = window.location.pathname.split('/').pop();
     const role = sessionStorage.getItem('pg_role');
-
-    // Helper function to underline the active page
     const active = (page) => currentPage === page ? "font-bold underline" : "hover:text-blue-200";
 
     let links = '';
-    
     if (currentPage === 'owner.html') {
-        // Owner Specific Navbar
         links = `
-            <li><a href="owner.html" class="font-bold underline">Manage Building</a></li>
-            <li><a href="caretaker.html" class="hover:text-purple-200">Caretaker View</a></li>
-            <li><button onclick="logout()" class="text-red-300 hover:text-white ml-4">Logout</button></li>
+            <a href="owner.html" class="block py-2 md:py-0 ${active('owner.html')}">Manage Building</a>
+            <a href="caretaker.html" class="block py-2 md:py-0 hover:text-purple-200">Caretaker View</a>
+            <button onclick="logout()" class="block w-full text-left py-2 md:py-0 text-red-300 hover:text-white md:ml-4">Logout</button>
         `;
     } else {
-        // Caretaker Navbar (Includes a button to go back to Owner View if the Owner is logged in)
         links = `
-            <li><a href="caretaker.html" class="${active('caretaker.html')}">Dashboard</a></li>
-            <li><a href="tenants.html" class="${active('tenants.html')}">Customers</a></li>
-            <li><a href="payments.html" class="${active('payments.html')}">Payments</a></li>
-            <li><a href="history.html" class="${active('history.html')}">History</a></li>
-            ${role === 'OWNER' ? '<li><a href="owner.html" class="text-purple-300 hover:text-purple-100 ml-4 font-bold border-l pl-4">Owner View</a></li>' : ''}
-            <li><button onclick="logout()" class="text-red-300 hover:text-white ml-4 border-l pl-4 border-gray-400">Logout</button></li>
+            <a href="caretaker.html" class="block py-2 md:py-0 ${active('caretaker.html')}">Dashboard</a>
+            <a href="tenants.html" class="block py-2 md:py-0 ${active('tenants.html')}">Tenants</a>
+            <a href="payments.html" class="block py-2 md:py-0 ${active('payments.html')}">Payments</a>
+            <a href="history.html" class="block py-2 md:py-0 ${active('history.html')}">History</a>
+            ${role === 'OWNER' ? `<a href="owner.html" class="block py-2 md:py-0 text-purple-300 hover:text-purple-100 font-bold md:border-l md:pl-4 border-gray-400">Owner View</a>` : ''}
+            <button onclick="logout()" class="block w-full text-left py-2 md:py-0 text-red-300 hover:text-white md:ml-4 md:border-l md:pl-4 border-gray-400">Logout</button>
         `;
     }
 
@@ -904,11 +894,16 @@ function loadNavbar() {
 
     navbarPlaceholder.innerHTML = `
         <nav class="${navColor} text-white p-4 shadow-md">
-            <div class="container mx-auto flex justify-between items-center">
+            <div class="container mx-auto flex justify-between items-center flex-wrap">
                 <h1 class="text-xl font-bold">PG Manager</h1>
-                <ul class="flex space-x-4 items-center">
+                <!-- Hamburger Button for Mobile -->
+                <button onclick="document.getElementById('nav-links').classList.toggle('hidden')" class="md:hidden block text-white focus:outline-none">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                </button>
+                <!-- Links container -->
+                <div id="nav-links" class="hidden md:flex flex-col md:flex-row w-full md:w-auto mt-4 md:mt-0 space-y-2 md:space-y-0 md:space-x-4 items-start md:items-center">
                     ${links}
-                </ul>
+                </div>
             </div>
         </nav>
     `;
@@ -919,10 +914,6 @@ function logout() {
     window.location.href = 'index.html';
 }
 
-
-
-
-// --- Populate Tenant Dropdown in Payment Form ---
 // --- Populate Tenant Dropdown (Fixed Room Names) ---
 async function populateTenantDropdown() {
     const tenantSelect = document.getElementById('p-tenant');
@@ -937,13 +928,13 @@ async function populateTenantDropdown() {
         const rooms = await roomsResponse.json();
         
         const roomMap = {};
-        rooms.forEach(room => roomMap[room.id] = `Block ${room.blockName} - Room ${room.roomNumber}`);
+        rooms.forEach(room => roomMap[room.id] = `Block ${room.blockName} -  ${room.roomNumber}`);
 
         tenantSelect.innerHTML = '<option value="" disabled selected>Select a Customer...</option>';
         
         tenants.forEach(tenant => {
-            const roomName = roomMap[tenant.roomId] || `Room ${tenant.roomId}`;
-            const optionText = `${tenant.fullName} - ${roomName} (${tenant.phoneNumber})`;
+            const roomName = roomMap[tenant.roomId] || ` ${tenant.roomId}`;
+            const optionText = `${tenant.fullName} - ${roomName} `;
             tenantSelect.innerHTML += `<option value="${tenant.id}">${optionText}</option>`;
         });
     } catch (error) {
@@ -951,14 +942,11 @@ async function populateTenantDropdown() {
     }
 }
 
-
-
-
 // --- Unified Page Load Logic (CLEANED) ---
 document.addEventListener('DOMContentLoaded', () => {
     // Auth guard check
     checkAuth();
-    loadNavbar(); // NEW: Injects the navigation bar
+    loadNavbar(); // Injects the navigation bar
 
     // Load data based on which page we are currently on
     if (document.getElementById('room-list')) loadRooms(); 
@@ -966,14 +954,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('payment-table-body')) loadPayments();
     if (document.getElementById('structured-room-list')) loadRoomsByBlock();
 
-    // NEW: Load the room dropdown options if the field exists
+    // Load components if they exist on the page
     if (document.getElementById('t-room')) populateRoomDropdown();
-    // NEW: Load the history table if it exists on the page
     if (document.getElementById('history-table-body')) loadHistory();
-    // NEW: Load the active tenants into the payment form dropdown
     if (document.getElementById('p-tenant')) populateTenantDropdown();
-    // NEW: Initialize the room search bar on the Caretaker Dashboard
+    
+    // Initialize search bars
     setupRoomSearch();  // Caretaker search
-    setupOwnerRoomSearch(); // NEW: Owner search
-    setupPaymentSearch(); // NEW: Payments filtering
+    setupOwnerRoomSearch(); // Owner search
+    setupPaymentSearch(); // Payments filtering
 });
