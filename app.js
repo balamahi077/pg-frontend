@@ -248,7 +248,7 @@ async function checkPendingRent() {
         const payments = await paymentsRes.json();
 
         const roomMap = {};
-        rooms.forEach(room => roomMap[room.id] = `Block ${room.blockName} - Room ${room.roomNumber}`);
+        rooms.forEach(room => roomMap[room.id] = `Block ${room.blockName} -  ${room.roomNumber}`);
 
         const activeTenants = allTenants.filter(t => t.status === 'ACTIVE' || t.status === 'ON_NOTICE');
         
